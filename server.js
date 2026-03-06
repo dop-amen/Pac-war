@@ -10,7 +10,6 @@ const io = new Server(server, { cors: { origin: '*' } });
 app.use(express.static(path.join(__dirname)));
 
 // ── MAP ──────────────────────────────────────────────────────────────────────
-// 0 = empty, 1 = wall, 2 = dot, 3 = power pellet
 const BASE_MAP = [
   [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
   [1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1],
@@ -39,22 +38,14 @@ const BASE_MAP = [
 const ROWS = BASE_MAP.length;
 const COLS = BASE_MAP[0].length;
 
-// Power pellet positions (corners of open areas)
-const POWER_PELLETS = [
-  {r:1,c:1},{r:1,c:19},{r:20,c:1},{r:20,c:19}
-];
+const POWER_PELLETS = [{r:1,c:1},{r:1,c:19},{r:20,c:1},{r:20,c:19}];
 
-// Build a fresh map with dots on every open cell (0), power pellets at corners
 function buildFreshMap() {
   const map = BASE_MAP.map(row => [...row]);
-  for (let r = 0; r < ROWS; r++) {
-    for (let c = 0; c < COLS; c++) {
-      if (map[r][c] === 0) map[r][c] = 2; // dot
-    }
-  }
-  POWER_PELLETS.forEach(({ r, c }) => {
-    if (map[r][c] !== 1) map[r][c] = 3; // power pellet
-  });
+  for (let r = 0; r < ROWS; r++)
+    for (let c = 0; c < COLS; c++)
+      if (map[r][c] === 0) map[r][c] = 2;
+  POWER_PELLETS.forEach(({ r, c }) => { if (map[r][c] !== 1) map[r][c] = 3; });
   return map;
 }
 
@@ -66,15 +57,12 @@ function countDots(map) {
   return n;
 }
 
-const GAME_DURATION = 240; // seconds
+const GAME_DURATION = 240;
 
-// Spawn points (will be cleared of dots when game starts)
 const PACMAN_SPAWNS = [{r:1,c:1},{r:1,c:19},{r:20,c:1},{r:20,c:19},{r:10,c:0},{r:10,c:20}];
 const GHOST_SPAWNS  = [{r:1,c:10},{r:20,c:10},{r:10,c:5},{r:10,c:15},{r:5,c:10},{r:15,c:10}];
 
-function getSpawn(spawns, idx) {
-  return spawns[idx % spawns.length];
-}
+function getSpawn(spawns, idx) { return spawns[idx % spawns.length]; }
 
 // ── ROOM STATE ───────────────────────────────────────────────────────────────
 const rooms = {};
@@ -85,16 +73,7 @@ function generateCode() {
 
 function createRoom(hostId) {
   const code = generateCode();
-  rooms[code] = {
-    code,
-    host: hostId,
-    state: 'lobby',
-    players: {},
-    map: null,
-    timeLeft: GAME_DURATION,
-    interval: null,
-    timerInterval: null,
-  };
+  rooms[code] = { code, host: hostId, state: 'lobby', players: {}, map: null, timeLeft: GAME_DURATION, interval: null, timerInterval: null };
   return code;
 }
 
@@ -119,12 +98,8 @@ function assignTeams(room) {
       const spawn = getSpawn(GHOST_SPAWNS, ghostIdx++);
       p.row = spawn.r; p.col = spawn.c;
     }
-    p.alive = true;
-    p.nextDir = null;
-    p.dir = null;
+    p.alive = true; p.nextDir = null; p.dir = null;
   });
-
-  // Clear dots from spawn positions so players don't instantly eat on spawn
   Object.values(room.players).forEach(p => {
     if (room.map[p.row][p.col] !== 1) room.map[p.row][p.col] = 0;
   });
@@ -137,43 +112,60 @@ function isWall(map, r, c) {
 
 const DIR_DELTA = { up:[-1,0], down:[1,0], left:[0,-1], right:[0,1] };
 
+function stopGameLoops(room) {
+  clearInterval(room.interval);
+  clearInterval(room.timerInterval);
+  room.interval = null;
+  room.timerInterval = null;
+}
+
 function endGame(room, winner, reason) {
   if (room.state === 'ended') return;
   room.state = 'ended';
-  clearInterval(room.interval);
-  clearInterval(room.timerInterval);
+  stopGameLoops(room);
   io.to(room.code).emit('gameOver', { winner, reason });
+
+}
+
+function launchGame(room) {
+  room.state = 'playing';
+  room.map = buildFreshMap();
+  room.timeLeft = GAME_DURATION;
+  assignTeams(room);
+  io.to(room.code).emit('gameStart', { map: room.map, players: buildSnapshot(room).players, timer: GAME_DURATION });
+  stopGameLoops(room); // safety clear before starting
+  room.interval = setInterval(() => tickRoom(room), 200);
+  room.timerInterval = setInterval(() => {
+    if (room.state !== 'playing') return;
+    room.timeLeft--;
+    if (room.timeLeft <= 0) endGame(room, 'draw', 'TIME EXPIRED');
+  }, 1000);
 }
 
 function tickRoom(room) {
   if (room.state !== 'playing') return;
 
-  // Move each alive player
   Object.values(room.players).forEach(p => {
-    if (!p.alive) return;
-    for (const d of [p.nextDir, p.dir]) {
-      if (!d) continue;
-      const [dr, dc] = DIR_DELTA[d];
-      const nr = p.row + dr, nc = p.col + dc;
-      if (!isWall(room.map, nr, nc)) {
-        p.row = nr; p.col = nc;
-        p.dir = d;
-        if (d === p.nextDir) p.nextDir = null;
-        break;
-      }
-    }
-  });
+  if (!p.alive) return;
+  for (const d of [p.nextDir, p.dir]) {
+    if (!d) continue;
+    const [dr, dc] = DIR_DELTA[d];
+    let nr = p.row + dr, nc = p.col + dc;
 
-  // Pacmen eat dots
+    if (!isWall(room.map, nr, nc)) {
+      p.row = nr; p.col = nc; p.dir = d;
+      if (d === p.nextDir) p.nextDir = null;
+      break;
+    }
+  }
+});
+
   Object.values(room.players).forEach(p => {
     if (!p.alive || p.team !== 'pacman') return;
     const cell = room.map[p.row][p.col];
-    if (cell === 2 || cell === 3) {
-      room.map[p.row][p.col] = 0; // eat dot
-    }
+    if (cell === 2 || cell === 3) room.map[p.row][p.col] = 0;
   });
 
-  // Ghost eats Pacman — ghost wins the collision, pacman dies
   const alivePlayers = Object.values(room.players).filter(p => p.alive);
   const byCell = {};
   alivePlayers.forEach(p => {
@@ -181,31 +173,18 @@ function tickRoom(room) {
     if (!byCell[key]) byCell[key] = [];
     byCell[key].push(p);
   });
-
   Object.values(byCell).forEach(group => {
-    const hasPac   = group.some(p => p.team === 'pacman');
-    const hasGhost = group.some(p => p.team === 'ghost');
-    if (hasPac && hasGhost) {
-      // Only pacmen die; ghosts survive
+    if (group.some(p => p.team === 'pacman') && group.some(p => p.team === 'ghost'))
       group.forEach(p => { if (p.team === 'pacman') p.alive = false; });
-    }
   });
 
-  // Win condition checks
   const aliveNow = Object.values(room.players).filter(p => p.alive);
-  const aPac   = aliveNow.filter(p => p.team === 'pacman').length;
-  const aGhost = aliveNow.filter(p => p.team === 'ghost').length;
-  const dotsLeft = countDots(room.map);
+  const aPac = aliveNow.filter(p => p.team === 'pacman').length;
 
-  // Emit current state (with timeLeft)
   io.to(room.code).emit('gameState', buildSnapshot(room));
 
-  if (aPac === 0) {
-    endGame(room, 'ghost', 'NO PACMEN REMAIN');
-  } else if (dotsLeft === 0) {
-    endGame(room, 'pacman', 'ALL DOTS EATEN');
-  }
-  // Timer expiry is handled separately in timerInterval
+  if (aPac === 0) endGame(room, 'ghost', 'NO PACMEN REMAIN');
+  else if (countDots(room.map) === 0) endGame(room, 'pacman', 'ALL DOTS EATEN');
 }
 
 function buildSnapshot(room) {
@@ -213,8 +192,7 @@ function buildSnapshot(room) {
     map: room.map,
     timeLeft: room.timeLeft,
     players: Object.entries(room.players).map(([id, p]) => ({
-      id, name: p.name, team: p.team,
-      row: p.row, col: p.col, alive: p.alive, dir: p.dir,
+      id, name: p.name, team: p.team, row: p.row, col: p.col, alive: p.alive, dir: p.dir,
     })),
   };
 }
@@ -248,30 +226,17 @@ io.on('connection', socket => {
     const room = getRoom(socket.roomCode);
     if (!room || room.host !== socket.id) return;
     if (Object.keys(room.players).length < 2) { socket.emit('error', 'Need at least 2 players'); return; }
-
-    room.state = 'playing';
-    room.map = buildFreshMap();      // fresh map with dots
-    room.timeLeft = GAME_DURATION;
-    assignTeams(room);
-
-    io.to(room.code).emit('gameStart', {
-      map: room.map,
-      players: buildSnapshot(room).players,
-      timer: GAME_DURATION,
-    });
-
-    // Game tick (movement + collision + dot eating)
-    room.interval = setInterval(() => tickRoom(room), 200); // 5 ticks/sec
-
-    // Countdown timer
-    room.timerInterval = setInterval(() => {
-      if (room.state !== 'playing') return;
-      room.timeLeft--;
-      if (room.timeLeft <= 0) {
-        endGame(room, 'draw', 'TIME EXPIRED');
-      }
-    }, 1000);
+    launchGame(room);
   });
+
+  // Host clicks "Play Again" — restarts with same players, no reconnect needed
+  socket.on('playAgain', () => {
+    const room = getRoom(socket.roomCode);
+    if (!room || room.host !== socket.id || room.state !== 'ended') return;
+    launchGame(room);
+  });
+  
+
 
   socket.on('input', ({ dir }) => {
     const room = getRoom(socket.roomCode);
@@ -284,17 +249,14 @@ io.on('connection', socket => {
     const room = getRoom(socket.roomCode);
     if (!room) return;
     delete room.players[socket.id];
-    if (room.state === 'lobby') {
-      io.to(room.code).emit('lobbyUpdate', lobbyInfo(room));
-    }
+    if (room.state === 'lobby') io.to(room.code).emit('lobbyUpdate', lobbyInfo(room));
     if (room.host === socket.id) {
       const remaining = Object.keys(room.players);
       if (remaining.length > 0) {
         room.host = remaining[0];
         io.to(room.code).emit('lobbyUpdate', lobbyInfo(room));
       } else {
-        clearInterval(room.interval);
-        clearInterval(room.timerInterval);
+        stopGameLoops(room);
         delete rooms[room.code];
       }
     }

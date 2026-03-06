@@ -150,23 +150,15 @@
   }
   canvas { display: block; image-rendering: pixelated; max-width: 100%; height: auto; }
 
-  /* HUD bar above canvas */
   #hud {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-    padding: 6px 2px;
-    font-family: 'Press Start 2P', monospace;
-    font-size: 0.5rem;
-    letter-spacing: 2px;
-    color: var(--dim);
+    display: flex; justify-content: space-between; align-items: center;
+    width: 100%; padding: 6px 2px;
+    font-family: 'Press Start 2P', monospace; font-size: 0.5rem; letter-spacing: 2px; color: var(--dim);
   }
   #hud-dots { color: var(--pac); }
   #hud-timer { color: var(--ghost); }
   #hud-dots span, #hud-timer span { color: white; }
 
-  /* Desktop sidebar */
   #sidebar { display: flex; flex-direction: column; gap: 14px; min-width: 180px; max-width: 220px; }
   .side-card { background: #0d1b3e; border: 1px solid #1e3a5f; border-radius: 8px; padding: 14px; }
   .side-title { font-family: 'Press Start 2P', monospace; font-size: 0.45rem; letter-spacing: 3px; margin-bottom: 10px; color: var(--accent); }
@@ -183,26 +175,25 @@
   .kbd-down { grid-column: 2; grid-row: 2; }
   .kbd-right { grid-column: 3; grid-row: 2; }
 
-  /* Objective card */
   .obj-row { display: flex; flex-direction: column; gap: 6px; }
   .obj-item { font-size: 0.45rem; color: var(--dim); letter-spacing: 1px; line-height: 1.6; }
   .obj-item span { color: var(--text); }
 
-  /* Dot progress bar */
   .dot-bar-wrap { margin-top: 6px; background: #0a0f1e; border-radius: 4px; height: 6px; overflow: hidden; }
   .dot-bar-fill { height: 100%; background: linear-gradient(90deg, var(--pac), #ffaa00); border-radius: 4px; transition: width 0.3s; }
 
   #overlay {
     display: none; position: fixed; inset: 0; background: #000000cc;
     backdrop-filter: blur(6px); z-index: 50;
-    align-items: center; justify-content: center; flex-direction: column; gap: 20px;
+    align-items: center; justify-content: center; flex-direction: column; gap: 16px;
   }
   #overlay.show { display: flex; }
   .overlay-title { font-family: 'Press Start 2P', monospace; font-size: clamp(1.2rem, 4vw, 2rem); text-align: center; }
   .overlay-sub { font-size: 0.65rem; color: var(--dim); letter-spacing: 3px; text-align: center; }
   .overlay-detail { font-size: 0.5rem; color: var(--dim); letter-spacing: 2px; text-align: center; }
+  /* host-only play again, hidden for non-hosts */
+  #play-again-btn { display: none; }
 
-  /* Mobile */
   #mobile-teams    { display: none; }
   #mobile-role     { display: none; }
   #mobile-controls { display: none; }
@@ -213,93 +204,25 @@
     #canvas-wrap { width: 100%; }
 
     #mobile-hud {
-      display: flex;
-      width: 100%;
-      justify-content: space-between;
-      font-family: 'Press Start 2P', monospace;
-      font-size: 0.42rem;
-      letter-spacing: 2px;
-      padding: 4px 2px;
+      display: flex; width: 100%; justify-content: space-between;
+      font-family: 'Press Start 2P', monospace; font-size: 0.42rem; letter-spacing: 2px; padding: 4px 2px;
     }
     #mob-dots { color: var(--pac); }
     #mob-timer { color: var(--ghost); }
 
-    #mobile-teams {
-      display: flex;
-      width: 100%;
-      gap: 10px;
-    }
-    .mob-team-card {
-      flex: 1;
-      background: #0d1b3e;
-      border: 1px solid #1e3a5f;
-      border-radius: 10px;
-      padding: 10px 12px;
-      max-height: 120px;
-      overflow-y: auto;
-    }
-    .mob-team-title {
-      font-family: 'Press Start 2P', monospace;
-      font-size: 0.38rem;
-      letter-spacing: 2px;
-      color: var(--accent);
-      margin-bottom: 8px;
-    }
+    #mobile-teams { display: flex; width: 100%; gap: 10px; }
+    .mob-team-card { flex: 1; background: #0d1b3e; border: 1px solid #1e3a5f; border-radius: 10px; padding: 10px 12px; max-height: 120px; overflow-y: auto; }
+    .mob-team-title { font-family: 'Press Start 2P', monospace; font-size: 0.38rem; letter-spacing: 2px; color: var(--accent); margin-bottom: 8px; }
 
-    #mobile-role {
-      display: flex;
-      width: 100%;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      background: #0d1b3e;
-      border: 1px solid #1e3a5f;
-      border-radius: 10px;
-      padding: 10px 16px;
-    }
-    .mob-role-label {
-      font-family: 'Press Start 2P', monospace;
-      font-size: 0.38rem;
-      letter-spacing: 3px;
-      color: var(--dim);
-    }
-    #mob-role-value {
-      font-family: 'Press Start 2P', monospace;
-      font-size: 0.6rem;
-    }
+    #mobile-role { display: flex; width: 100%; align-items: center; justify-content: center; gap: 10px; background: #0d1b3e; border: 1px solid #1e3a5f; border-radius: 10px; padding: 10px 16px; }
+    .mob-role-label { font-family: 'Press Start 2P', monospace; font-size: 0.38rem; letter-spacing: 3px; color: var(--dim); }
+    #mob-role-value { font-family: 'Press Start 2P', monospace; font-size: 0.6rem; }
 
-    #mobile-controls {
-      display: flex;
-      width: 100%;
-      gap: 10px;
-      padding-bottom: 16px;
-    }
-    .dpad-section {
-      flex: 1;
-      display: grid;
-      gap: 8px;
-      background: #0d1b3e;
-      border: 1px solid #1e3a5f;
-      border-radius: 12px;
-      padding: 12px;
-    }
+    #mobile-controls { display: flex; width: 100%; gap: 10px; padding-bottom: 16px; }
+    .dpad-section { flex: 1; display: grid; gap: 8px; background: #0d1b3e; border: 1px solid #1e3a5f; border-radius: 12px; padding: 12px; }
     #dpad-lr { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr; }
     #dpad-ud { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
-    .dpad-btn {
-      background: #0a0f1e;
-      border: 1px solid #2a3f6f;
-      border-radius: 10px;
-      color: var(--text);
-      font-size: 1.8rem;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      user-select: none;
-      -webkit-tap-highlight-color: transparent;
-      transition: background .1s, border-color .1s;
-      min-height: 72px;
-    }
+    .dpad-btn { background: #0a0f1e; border: 1px solid #2a3f6f; border-radius: 10px; color: var(--text); font-size: 1.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; user-select: none; -webkit-tap-highlight-color: transparent; transition: background .1s, border-color .1s; min-height: 72px; }
     .dpad-btn:active { background: #1e3a5f; border-color: var(--accent); }
   }
 
@@ -347,10 +270,7 @@
 
   <!-- GAME -->
   <div id="game-screen" class="screen">
-
-    <!-- Map canvas -->
     <div style="display:flex;flex-direction:column;align-items:center;gap:6px;max-width:100%">
-      <!-- Desktop HUD above canvas -->
       <div id="hud">
         <div id="hud-dots">DOTS <span id="hud-dot-count">—</span></div>
         <div id="hud-timer">TIME <span id="hud-time">—</span></div>
@@ -360,7 +280,6 @@
       </div>
     </div>
 
-    <!-- Mobile UI below canvas -->
     <div id="mobile-hud">
       <div id="mob-dots">DOTS <span id="mob-dot-count">—</span></div>
       <div id="mob-timer">TIME <span id="mob-time">—</span></div>
@@ -393,7 +312,6 @@
       </div>
     </div>
 
-    <!-- Desktop sidebar -->
     <div id="sidebar">
       <div class="side-card">
         <div class="side-title">🟡 PACMEN</div>
@@ -431,7 +349,6 @@
         <div id="my-team-display" style="font-size:1.2rem;text-align:center;padding:6px 0"></div>
       </div>
     </div>
-
   </div>
 </div>
 
@@ -440,22 +357,21 @@
   <div class="overlay-title" id="overlay-title">GAME OVER</div>
   <div class="overlay-sub" id="overlay-sub"></div>
   <div class="overlay-detail" id="overlay-detail"></div>
-  <button class="btn btn-primary" style="max-width:280px;width:100%" onclick="backToMenu()">↩ MAIN MENU</button>
+  <!-- Host only: play again -->
+  <button class="btn btn-primary" id="play-again-btn" style="max-width:280px;width:100%" onclick="playAgain()">🔁 PLAY AGAIN</button>
+
+
+  <!-- Everyone: back to menu -->
+  <button class="btn btn-outline" style="max-width:280px;width:100%" onclick="backToMenu()">↩ MAIN MENU</button>
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
 const ROWS = 22, COLS = 21;
-
-// Map cell values (must match server)
-const CELL_WALL   = 1;
-const CELL_DOT    = 2;
-const CELL_POWER  = 3;
-const CELL_EMPTY  = 0;
+const CELL_WALL = 1, CELL_DOT = 2, CELL_POWER = 3, CELL_EMPTY = 0;
 
 let socket, myId, myTeam, isHost = false, roomCode = '';
 let gameMap = null, players = {};
-let myDir = null;
 let animFrame = 0;
 let totalDots = 0, dotsRemaining = 0;
 let gameTimer = null, timeLeft = 0;
@@ -489,12 +405,13 @@ function initSocket() {
 
   socket.on('gameStart', ({ map, players: plist, timer }) => {
     gameMap = map;
+    players = {};
     plist.forEach(p => { players[p.id] = p; });
     myTeam = players[socket.id]?.team;
-    // Count total dots on initial map
     totalDots = countDots(map);
     dotsRemaining = totalDots;
-    timeLeft = timer || 120;
+    timeLeft = timer || 240;
+    document.getElementById('overlay').classList.remove('show'); // hide overlay if replaying
     showScreen('game-screen');
     initCanvas();
     updateSidebar();
@@ -503,11 +420,9 @@ function initSocket() {
   });
 
   socket.on('gameState', ({ map, players: plist, timeLeft: tl }) => {
-    gameMap = map;
-    players = {};
+    gameMap = map; players = {};
     plist.forEach(p => { players[p.id] = p; });
     animFrame++;
-    // Count dots remaining
     dotsRemaining = countDots(map);
     if (tl !== undefined) timeLeft = tl;
     renderGame();
@@ -517,7 +432,6 @@ function initSocket() {
 
   socket.on('gameOver', ({ winner, reason }) => {
     clearInterval(gameTimer);
-    const me = players[socket.id];
     const isMyTeam = (winner === myTeam);
 
     let title, sub, detail = '';
@@ -542,8 +456,14 @@ function initSocket() {
       winner && !isMyTeam ? 'var(--ghost)' : '#ffffff';
     document.getElementById('overlay-sub').textContent = sub;
     document.getElementById('overlay-detail').textContent = detail;
+
+    // Only host sees Play Again button
+    document.getElementById('play-again-btn').style.display = isHost ? 'block' : 'none';
     document.getElementById('overlay').classList.add('show');
   });
+
+  
+
 }
 
 // ─── Room actions ─────────────────────────────────────────────────────────────
@@ -556,6 +476,7 @@ function joinRoom() {
   socket.emit('joinRoom', { code, name: n });
 }
 function startGame() { socket.emit('startGame'); }
+function playAgain() { socket.emit('playAgain'); }  // host only — server restarts game with same players
 function leaveRoom() {
   clearInterval(gameTimer);
   if (socket) socket.disconnect();
@@ -566,17 +487,12 @@ function backToMenu() { document.getElementById('overlay').classList.remove('sho
 function sendDir(dir) {
   if (!socket) return;
   socket.emit('input', { dir });
-  myDir = dir;
   highlightKey(dir);
 }
 
-// ─── Client-side countdown (display only, server is authoritative) ────────────
 function startClientTimer() {
   clearInterval(gameTimer);
-  gameTimer = setInterval(() => {
-    timeLeft = Math.max(0, timeLeft - 1);
-    updateHUD();
-  }, 1000);
+  gameTimer = setInterval(() => { timeLeft = Math.max(0, timeLeft - 1); updateHUD(); }, 1000);
 }
 
 // ─── Canvas ───────────────────────────────────────────────────────────────────
@@ -590,6 +506,11 @@ function initCanvas() {
   renderGame();
 }
 
+function backToLobby() {
+  socket.emit('returnToLobby');
+  document.getElementById('overlay').classList.remove('show');
+}
+
 function renderGame() {
   const canvas = document.getElementById('gameCanvas');
   const ctx = canvas.getContext('2d');
@@ -597,7 +518,6 @@ function renderGame() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   if (!gameMap) return;
 
-  // Background
   ctx.fillStyle = '#08080f';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -605,39 +525,26 @@ function renderGame() {
     for (let c = 0; c < COLS; c++) {
       const cell = gameMap[r][c];
       const cx = c * CS, cy = r * CS;
-
       if (cell === CELL_WALL) {
-        // Wall
         ctx.fillStyle = '#0f2a5a';
         ctx.fillRect(cx, cy, CS, CS);
-        ctx.strokeStyle = '#1e4a9a';
-        ctx.lineWidth = 1;
+        ctx.strokeStyle = '#1e4a9a'; ctx.lineWidth = 1;
         ctx.strokeRect(cx+0.5, cy+0.5, CS-1, CS-1);
-
       } else if (cell === CELL_DOT) {
-        // Normal dot — small white circle
         const dotR = Math.max(2, CS * 0.1);
         ctx.fillStyle = '#ffffff99';
-        ctx.beginPath();
-        ctx.arc(cx + CS/2, cy + CS/2, dotR, 0, Math.PI*2);
-        ctx.fill();
-
+        ctx.beginPath(); ctx.arc(cx+CS/2, cy+CS/2, dotR, 0, Math.PI*2); ctx.fill();
       } else if (cell === CELL_POWER) {
-        // Power pellet — larger glowing circle
         const pR = Math.max(4, CS * 0.22);
         const pulse = 0.7 + 0.3 * Math.sin(animFrame * 0.15);
-        ctx.shadowBlur = 10 * pulse;
-        ctx.shadowColor = 'var(--powerdot)';
-        ctx.fillStyle = `rgba(0, 212, 255, ${pulse})`;
-        ctx.beginPath();
-        ctx.arc(cx + CS/2, cy + CS/2, pR, 0, Math.PI*2);
-        ctx.fill();
+        ctx.shadowBlur = 10 * pulse; ctx.shadowColor = '#00d4ff';
+        ctx.fillStyle = `rgba(0,212,255,${pulse})`;
+        ctx.beginPath(); ctx.arc(cx+CS/2, cy+CS/2, pR, 0, Math.PI*2); ctx.fill();
         ctx.shadowBlur = 0;
       }
     }
   }
 
-  // Dead players (faded)
   Object.values(players).forEach(p => {
     if (p.alive) return;
     const x = p.col*CS+CS/2, y = p.row*CS+CS/2;
@@ -647,17 +554,16 @@ function renderGame() {
     ctx.globalAlpha = 1;
   });
 
-  // Live players
   Object.values(players).forEach(p => {
     if (!p.alive) return;
     const x = p.col*CS+CS/2, y = p.row*CS+CS/2, r = CS/2-3;
     const isMe = p.id === socket.id;
-    if (p.team === 'pacman') drawPacman(ctx, x, y, r, p, isMe, CS);
-    else drawGhost(ctx, x, y, r, p, isMe, CS);
+    if (p.team === 'pacman') drawPacman(ctx, x, y, r, p, isMe);
+    else drawGhost(ctx, x, y, r, p, isMe);
   });
 }
 
-function drawPacman(ctx, x, y, r, p, isMe, CS) {
+function drawPacman(ctx, x, y, r, p, isMe) {
   const mouthAngle = 0.25 + 0.2 * Math.abs(Math.sin(animFrame * 0.5));
   let startAngle = 0;
   if (p.dir === 'up') startAngle = -Math.PI/2;
@@ -665,15 +571,12 @@ function drawPacman(ctx, x, y, r, p, isMe, CS) {
   else if (p.dir === 'left') startAngle = Math.PI;
   if (isMe) { ctx.shadowBlur = 18; ctx.shadowColor = '#ffd700'; }
   ctx.fillStyle = '#ffd700';
-  ctx.beginPath();
-  ctx.moveTo(x, y);
+  ctx.beginPath(); ctx.moveTo(x, y);
   ctx.arc(x, y, r, startAngle+mouthAngle, startAngle+Math.PI*2-mouthAngle);
   ctx.closePath(); ctx.fill();
   const eyeAngle = startAngle - Math.PI/3;
   ctx.fillStyle = '#1a0a00';
-  ctx.beginPath();
-  ctx.arc(x+r*0.5*Math.cos(eyeAngle), y+r*0.5*Math.sin(eyeAngle), 2, 0, Math.PI*2);
-  ctx.fill();
+  ctx.beginPath(); ctx.arc(x+r*0.5*Math.cos(eyeAngle), y+r*0.5*Math.sin(eyeAngle), 2, 0, Math.PI*2); ctx.fill();
   ctx.shadowBlur = 0;
   drawName(ctx, x, y-r-6, p.name, isMe);
 }
@@ -681,12 +584,9 @@ function drawPacman(ctx, x, y, r, p, isMe, CS) {
 function drawGhost(ctx, x, y, r, p, isMe) {
   if (isMe) { ctx.shadowBlur = 18; ctx.shadowColor = '#e94560'; }
   ctx.fillStyle = isMe ? '#ff6680' : '#e94560';
-  ctx.beginPath();
-  ctx.arc(x, y, r, Math.PI, 0);
+  ctx.beginPath(); ctx.arc(x, y, r, Math.PI, 0);
   const segW = (r*2)/3;
-  for (let i = 3; i >= 0; i--) {
-    ctx.lineTo(x+r-i*segW, (i%2===0) ? y+r : y+r-5);
-  }
+  for (let i = 3; i >= 0; i--) ctx.lineTo(x+r-i*segW, (i%2===0) ? y+r : y+r-5);
   ctx.closePath(); ctx.fill();
   [-r*0.35, r*0.35].forEach(ox => {
     ctx.fillStyle = 'white';
@@ -707,35 +607,26 @@ function drawName(ctx, x, y, name, isMe) {
   ctx.fillText(name.length>8 ? name.slice(0,7)+'…' : name, x, y);
 }
 
-// ─── HUD ──────────────────────────────────────────────────────────────────────
 function updateHUD() {
   const mins = Math.floor(timeLeft / 60);
   const secs = String(timeLeft % 60).padStart(2, '0');
   const timeStr = `${mins}:${secs}`;
-
   document.getElementById('hud-dot-count').textContent = dotsRemaining;
   document.getElementById('hud-time').textContent = timeStr;
   document.getElementById('mob-dot-count').textContent = dotsRemaining;
   document.getElementById('mob-time').textContent = timeStr;
 }
 
-// ─── Sidebar ──────────────────────────────────────────────────────────────────
 function updateSidebar() {
   const pacs   = Object.values(players).filter(p => p.team==='pacman');
   const ghosts = Object.values(players).filter(p => p.team==='ghost');
 
   const pacHTML = pacs.map(p =>
-    `<div class="player-row ${p.alive?'':'dead'}">
-      <span class="player-emoji">${p.id===socket.id?'🌟':'🟡'}</span>
-      <span style="color:var(--pac)">${escHtml(p.name)}</span>
-    </div>`
+    `<div class="player-row ${p.alive?'':'dead'}"><span class="player-emoji">${p.id===socket.id?'🌟':'🟡'}</span><span style="color:var(--pac)">${escHtml(p.name)}</span></div>`
   ).join('') || '<div style="color:var(--dim);font-size:0.55rem">None</div>';
 
   const ghostHTML = ghosts.map(p =>
-    `<div class="player-row ${p.alive?'':'dead'}">
-      <span class="player-emoji">${p.id===socket.id?'🌟':'👻'}</span>
-      <span style="color:var(--ghost)">${escHtml(p.name)}</span>
-    </div>`
+    `<div class="player-row ${p.alive?'':'dead'}"><span class="player-emoji">${p.id===socket.id?'🌟':'👻'}</span><span style="color:var(--ghost)">${escHtml(p.name)}</span></div>`
   ).join('') || '<div style="color:var(--dim);font-size:0.55rem">None</div>';
 
   document.getElementById('pac-list').innerHTML   = pacHTML;
@@ -743,7 +634,6 @@ function updateSidebar() {
   document.getElementById('mob-pac-list').innerHTML   = pacHTML;
   document.getElementById('mob-ghost-list').innerHTML = ghostHTML;
 
-  // Dot progress bar
   if (totalDots > 0) {
     const pct = (dotsRemaining / totalDots) * 100;
     document.getElementById('dot-bar').style.width = pct + '%';
@@ -761,7 +651,6 @@ function updateSidebar() {
   }
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 function countDots(map) {
   let count = 0;
   for (let r = 0; r < map.length; r++)
@@ -770,10 +659,7 @@ function countDots(map) {
   return count;
 }
 
-const keyMap = {
-  ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',
-  w:'up',s:'down',a:'left',d:'right',W:'up',S:'down',A:'left',D:'right'
-};
+const keyMap = { ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',w:'up',s:'down',a:'left',d:'right',W:'up',S:'down',A:'left',D:'right' };
 document.addEventListener('keydown', e => {
   if (document.activeElement && ['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
   if (!document.getElementById('game-screen').classList.contains('active')) return;
@@ -800,7 +686,5 @@ function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replac
 
 document.getElementById('code-input').addEventListener('input', function() { this.value = this.value.toUpperCase(); });
 </script>
-
-
 </body>
 </html>
