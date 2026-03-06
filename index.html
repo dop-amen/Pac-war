@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PACWAR — Multiplayer</title>
+
+<link rel="icon" href="/favicon.ico" type="image/x-icon"/>
+
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --grid: #1a1a2e;
+    --wall: #16213e;
+    --wall-glow: #0f3460;
+    --pac: #ffd700;
+    --ghost: #e94560;
+    --accent: #00d4ff;
+    --text: #e0e0ff;
+    --dim: #555577;
+    --dot: #ffffff88;
+    --powerdot: #00d4ff;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Orbitron', monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 0%, #0f3460 0%, transparent 60%),
+                radial-gradient(ellipse at 50% 100%, #1a0a2e 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  #app { position: relative; z-index: 1; width: 100%; max-width: 900px; padding: 16px; }
+
+  .screen { display: none; flex-direction: column; align-items: center; gap: 20px; }
+  .screen.active { display: flex; }
+
+  .title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(1.4rem, 5vw, 2.8rem);
+    color: var(--pac);
+    text-shadow: 0 0 20px var(--pac), 0 0 60px #ffaa0088;
+    letter-spacing: 4px;
+    text-align: center;
+    animation: titlePulse 3s ease-in-out infinite;
+  }
+  @keyframes titlePulse {
+    0%,100% { text-shadow: 0 0 20px var(--pac), 0 0 60px #ffaa0088; }
+    50% { text-shadow: 0 0 40px var(--pac), 0 0 100px #ffaa00cc; }
+  }
+
+  .subtitle {
+    font-size: clamp(0.35rem, 2.5vw, 0.55rem);
+    color: var(--accent);
+    letter-spacing: clamp(2px, 1vw, 6px);
+    text-transform: uppercase;
+    font-family: 'Press Start 2P', monospace;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .card {
+    background: linear-gradient(135deg, #0d1b3e 0%, #16213e 100%);
+    border: 1px solid #1e3a5f;
+    border-radius: 12px;
+    padding: 28px 32px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 8px 40px #000a, 0 0 0 1px #ffffff08 inset;
+  }
+
+  .input-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+  .input-group label { font-size: 0.6rem; color: var(--accent); letter-spacing: 3px; }
+
+  input[type="text"] {
+    background: #0a0f1e;
+    border: 1px solid #2a3f6f;
+    border-radius: 6px;
+    padding: 12px 16px;
+    color: var(--text);
+    font-family: 'Orbitron', monospace;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color .2s, box-shadow .2s;
+    width: 100%;
+  }
+  input[type="text"]:focus { border-color: var(--accent); box-shadow: 0 0 12px #00d4ff33; }
+  input[type="text"]::placeholder { color: var(--dim); }
+
+  .btn {
+    display: block; width: 100%; padding: 14px; border: none; border-radius: 8px;
+    font-family: 'Press Start 2P', monospace; font-size: 0.65rem; letter-spacing: 2px;
+    cursor: pointer; transition: transform .1s, box-shadow .2s; margin-top: 8px;
+  }
+  .btn:hover { transform: translateY(-2px); }
+  .btn:active { transform: translateY(0); }
+  .btn-primary { background: linear-gradient(135deg, #ffd700, #ffaa00); color: #1a0a00; box-shadow: 0 4px 20px #ffd70044; }
+  .btn-primary:hover { box-shadow: 0 6px 30px #ffd70077; }
+  .btn-secondary { background: linear-gradient(135deg, #e94560, #c0392b); color: white; box-shadow: 0 4px 20px #e9456044; }
+  .btn-secondary:hover { box-shadow: 0 6px 30px #e9456077; }
+  .btn-outline { background: transparent; border: 1px solid #2a3f6f; color: var(--dim); box-shadow: none; }
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+
+  .divider {
+    display: flex; align-items: center; gap: 12px;
+    color: var(--dim); font-size: 0.55rem; letter-spacing: 2px; margin: 8px 0;
+  }
+  .divider::before,.divider::after { content:''; flex:1; height:1px; background:#2a3f6f; }
+
+  .error-msg { color: var(--ghost); font-size: 0.55rem; letter-spacing: 1px; text-align: center; min-height: 16px; }
+
+  #lobby-code {
+    font-family: 'Press Start 2P', monospace; font-size: 2rem;
+    color: var(--pac); letter-spacing: 8px; text-shadow: 0 0 20px var(--pac); text-align: center;
+  }
+  .lobby-label { font-size: 0.5rem; color: var(--dim); letter-spacing: 4px; text-align: center; }
+
+  #player-list { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 8px; max-height: 260px; overflow-y: auto; }
+  .player-tag { background: #0d1b3e; border: 1px solid #1e3a5f; border-radius: 6px; padding: 10px 16px; font-size: 0.65rem; display: flex; align-items: center; gap: 10px; }
+  .player-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+
+  /* Game screen */
+  #game-screen {
+    flex-direction: row; align-items: flex-start;
+    justify-content: center; gap: 20px; flex-wrap: wrap; width: 100%;
+  }
+
+  #canvas-wrap {
+    position: relative; display: inline-block;
+    border: 2px solid #1e3a5f; border-radius: 8px;
+    box-shadow: 0 0 40px #00d4ff22, 0 0 0 1px #ffffff05 inset;
+    overflow: hidden; max-width: 100%;
+  }
+  canvas { display: block; image-rendering: pixelated; max-width: 100%; height: auto; }
+
+  /* HUD bar above canvas */
+  #hud {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 6px 2px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.5rem;
+    letter-spacing: 2px;
+    color: var(--dim);
+  }
+  #hud-dots { color: var(--pac); }
+  #hud-timer { color: var(--ghost); }
+  #hud-dots span, #hud-timer span { color: white; }
+
+  /* Desktop sidebar */
+  #sidebar { display: flex; flex-direction: column; gap: 14px; min-width: 180px; max-width: 220px; }
+  .side-card { background: #0d1b3e; border: 1px solid #1e3a5f; border-radius: 8px; padding: 14px; }
+  .side-title { font-family: 'Press Start 2P', monospace; font-size: 0.45rem; letter-spacing: 3px; margin-bottom: 10px; color: var(--accent); }
+  .player-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 0.6rem; border-bottom: 1px solid #1a2a4a; }
+  .player-row:last-child { border: none; }
+  .player-row.dead { opacity: 0.35; text-decoration: line-through; }
+  .player-emoji { font-size: 0.9rem; }
+
+  .kbd-hint { display: grid; grid-template-columns: repeat(3, 32px); grid-template-rows: repeat(2, 32px); gap: 4px; justify-content: center; }
+  .kbd { width: 32px; height: 32px; background: #0a0f1e; border: 1px solid #2a3f6f; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: var(--text); transition: background .1s, border-color .1s; }
+  .kbd.active { background: #1e3a5f; border-color: var(--accent); }
+  .kbd-up { grid-column: 2; grid-row: 1; }
+  .kbd-left { grid-column: 1; grid-row: 2; }
+  .kbd-down { grid-column: 2; grid-row: 2; }
+  .kbd-right { grid-column: 3; grid-row: 2; }
+
+  /* Objective card */
+  .obj-row { display: flex; flex-direction: column; gap: 6px; }
+  .obj-item { font-size: 0.45rem; color: var(--dim); letter-spacing: 1px; line-height: 1.6; }
+  .obj-item span { color: var(--text); }
+
+  /* Dot progress bar */
+  .dot-bar-wrap { margin-top: 6px; background: #0a0f1e; border-radius: 4px; height: 6px; overflow: hidden; }
+  .dot-bar-fill { height: 100%; background: linear-gradient(90deg, var(--pac), #ffaa00); border-radius: 4px; transition: width 0.3s; }
+
+  #overlay {
+    display: none; position: fixed; inset: 0; background: #000000cc;
+    backdrop-filter: blur(6px); z-index: 50;
+    align-items: center; justify-content: center; flex-direction: column; gap: 20px;
+  }
+  #overlay.show { display: flex; }
+  .overlay-title { font-family: 'Press Start 2P', monospace; font-size: clamp(1.2rem, 4vw, 2rem); text-align: center; }
+  .overlay-sub { font-size: 0.65rem; color: var(--dim); letter-spacing: 3px; text-align: center; }
+  .overlay-detail { font-size: 0.5rem; color: var(--dim); letter-spacing: 2px; text-align: center; }
+
+  /* Mobile */
+  #mobile-teams    { display: none; }
+  #mobile-role     { display: none; }
+  #mobile-controls { display: none; }
+  #mobile-hud      { display: none; }
+
+  @media (max-width: 700px) {
+    #sidebar { display: none; }
+    #canvas-wrap { width: 100%; }
+
+    #mobile-hud {
+      display: flex;
+      width: 100%;
+      justify-content: space-between;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.42rem;
+      letter-spacing: 2px;
+      padding: 4px 2px;
+    }
+    #mob-dots { color: var(--pac); }
+    #mob-timer { color: var(--ghost); }
+
+    #mobile-teams {
+      display: flex;
+      width: 100%;
+      gap: 10px;
+    }
+    .mob-team-card {
+      flex: 1;
+      background: #0d1b3e;
+      border: 1px solid #1e3a5f;
+      border-radius: 10px;
+      padding: 10px 12px;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+    .mob-team-title {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.38rem;
+      letter-spacing: 2px;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+
+    #mobile-role {
+      display: flex;
+      width: 100%;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: #0d1b3e;
+      border: 1px solid #1e3a5f;
+      border-radius: 10px;
+      padding: 10px 16px;
+    }
+    .mob-role-label {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.38rem;
+      letter-spacing: 3px;
+      color: var(--dim);
+    }
+    #mob-role-value {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.6rem;
+    }
+
+    #mobile-controls {
+      display: flex;
+      width: 100%;
+      gap: 10px;
+      padding-bottom: 16px;
+    }
+    .dpad-section {
+      flex: 1;
+      display: grid;
+      gap: 8px;
+      background: #0d1b3e;
+      border: 1px solid #1e3a5f;
+      border-radius: 12px;
+      padding: 12px;
+    }
+    #dpad-lr { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr; }
+    #dpad-ud { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
+    .dpad-btn {
+      background: #0a0f1e;
+      border: 1px solid #2a3f6f;
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 1.8rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      transition: background .1s, border-color .1s;
+      min-height: 72px;
+    }
+    .dpad-btn:active { background: #1e3a5f; border-color: var(--accent); }
+  }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #2a3f6f; border-radius: 2px; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- MENU -->
+  <div id="menu-screen" class="screen active">
+    <div class="title">PACWAR</div>
+    <div class="subtitle">Multiplayer · Team Elimination</div>
+    <div class="card">
+      <div class="input-group">
+        <label>YOUR NAME</label>
+        <input type="text" id="name-input" maxlength="14" placeholder="Enter callsign..." autocomplete="off"/>
+      </div>
+      <button class="btn btn-primary" onclick="createRoom()">⚡ CREATE ROOM</button>
+      <div class="divider">or</div>
+      <div class="input-group">
+        <label>ROOM CODE</label>
+        <input type="text" id="code-input" maxlength="5" placeholder="XXXXX" autocomplete="off"
+               style="text-transform:uppercase;letter-spacing:6px;text-align:center;font-size:1.2rem"/>
+      </div>
+      <button class="btn btn-secondary" onclick="joinRoom()">🎮 JOIN ROOM</button>
+      <div class="error-msg" id="menu-error"></div>
+    </div>
+  </div>
+
+  <!-- LOBBY -->
+  <div id="lobby-screen" class="screen">
+    <div class="title" style="font-size:1.2rem">LOBBY</div>
+    <div class="lobby-label">SHARE THIS CODE</div>
+    <div id="lobby-code">-----</div>
+    <div id="player-list"></div>
+    <div class="error-msg" id="lobby-error"></div>
+    <div id="start-btn-wrap" style="width:100%;max-width:420px;display:none">
+      <button class="btn btn-primary" onclick="startGame()">▶ START GAME</button>
+    </div>
+    <button class="btn btn-outline" style="max-width:420px;width:100%" onclick="leaveRoom()">← LEAVE</button>
+  </div>
+
+  <!-- GAME -->
+  <div id="game-screen" class="screen">
+
+    <!-- Map canvas -->
+    <div style="display:flex;flex-direction:column;align-items:center;gap:6px;max-width:100%">
+      <!-- Desktop HUD above canvas -->
+      <div id="hud">
+        <div id="hud-dots">DOTS <span id="hud-dot-count">—</span></div>
+        <div id="hud-timer">TIME <span id="hud-time">—</span></div>
+      </div>
+      <div id="canvas-wrap">
+        <canvas id="gameCanvas"></canvas>
+      </div>
+    </div>
+
+    <!-- Mobile UI below canvas -->
+    <div id="mobile-hud">
+      <div id="mob-dots">DOTS <span id="mob-dot-count">—</span></div>
+      <div id="mob-timer">TIME <span id="mob-time">—</span></div>
+    </div>
+
+    <div id="mobile-teams">
+      <div class="mob-team-card">
+        <div class="mob-team-title">🟡 PACMEN</div>
+        <div id="mob-pac-list"></div>
+      </div>
+      <div class="mob-team-card">
+        <div class="mob-team-title">🔴 GHOSTS</div>
+        <div id="mob-ghost-list"></div>
+      </div>
+    </div>
+
+    <div id="mobile-role">
+      <span class="mob-role-label">YOU ARE</span>
+      <span id="mob-role-value"></span>
+    </div>
+
+    <div id="mobile-controls">
+      <div class="dpad-section" id="dpad-lr">
+        <div class="dpad-btn" ontouchstart="sendDir('left')">◄</div>
+        <div class="dpad-btn" ontouchstart="sendDir('right')">►</div>
+      </div>
+      <div class="dpad-section" id="dpad-ud">
+        <div class="dpad-btn" ontouchstart="sendDir('up')">▲</div>
+        <div class="dpad-btn" ontouchstart="sendDir('down')">▼</div>
+      </div>
+    </div>
+
+    <!-- Desktop sidebar -->
+    <div id="sidebar">
+      <div class="side-card">
+        <div class="side-title">🟡 PACMEN</div>
+        <div id="pac-list"></div>
+      </div>
+      <div class="side-card">
+        <div class="side-title">🔴 GHOSTS</div>
+        <div id="ghost-list"></div>
+      </div>
+      <div class="side-card">
+        <div class="side-title">OBJECTIVES</div>
+        <div class="obj-row">
+          <div class="obj-item">🟡 <span>Eat all dots</span> before time runs out or ghosts eat you</div>
+          <div class="obj-item">👻 <span>Eat all Pac-Men</span> before they clear the maze</div>
+        </div>
+        <div class="dot-bar-wrap">
+          <div class="dot-bar-fill" id="dot-bar" style="width:100%"></div>
+        </div>
+        <div style="font-size:0.42rem;color:var(--dim);text-align:center;margin-top:4px;letter-spacing:1px">
+          <span id="dot-progress-label">— dots remaining</span>
+        </div>
+      </div>
+      <div class="side-card">
+        <div class="side-title">CONTROLS</div>
+        <div class="kbd-hint">
+          <div class="kbd kbd-up" id="k-up">▲</div>
+          <div class="kbd kbd-left" id="k-left">◄</div>
+          <div class="kbd kbd-down" id="k-down">▼</div>
+          <div class="kbd kbd-right" id="k-right">►</div>
+        </div>
+        <div style="font-size:0.45rem;color:var(--dim);text-align:center;margin-top:8px;letter-spacing:2px">ARROW KEYS / WASD</div>
+      </div>
+      <div class="side-card">
+        <div class="side-title">YOU ARE</div>
+        <div id="my-team-display" style="font-size:1.2rem;text-align:center;padding:6px 0"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- OVERLAY -->
+<div id="overlay">
+  <div class="overlay-title" id="overlay-title">GAME OVER</div>
+  <div class="overlay-sub" id="overlay-sub"></div>
+  <div class="overlay-detail" id="overlay-detail"></div>
+  <button class="btn btn-primary" style="max-width:280px;width:100%" onclick="backToMenu()">↩ MAIN MENU</button>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const ROWS = 22, COLS = 21;
+
+// Map cell values (must match server)
+const CELL_WALL   = 1;
+const CELL_DOT    = 2;
+const CELL_POWER  = 3;
+const CELL_EMPTY  = 0;
+
+let socket, myId, myTeam, isHost = false, roomCode = '';
+let gameMap = null, players = {};
+let myDir = null;
+let animFrame = 0;
+let totalDots = 0, dotsRemaining = 0;
+let gameTimer = null, timeLeft = 0;
+
+// ─── Socket ───────────────────────────────────────────────────────────────────
+function initSocket() {
+  socket = io();
+  socket.on('connect', () => { myId = socket.id; });
+  socket.on('error', msg => { showError('menu-error', msg); showError('lobby-error', msg); });
+
+  socket.on('roomCreated', ({ code }) => {
+    roomCode = code; isHost = true;
+    showScreen('lobby-screen');
+    document.getElementById('lobby-code').textContent = code;
+    document.getElementById('start-btn-wrap').style.display = 'block';
+  });
+  socket.on('roomJoined', ({ code }) => {
+    roomCode = code; isHost = false;
+    showScreen('lobby-screen');
+    document.getElementById('lobby-code').textContent = code;
+    document.getElementById('start-btn-wrap').style.display = 'none';
+  });
+  socket.on('lobbyUpdate', ({ players: plist, host }) => {
+    isHost = (host === socket.id);
+    document.getElementById('start-btn-wrap').style.display = isHost ? 'block' : 'none';
+    const el = document.getElementById('player-list');
+    el.innerHTML = plist.map(p =>
+      `<div class="player-tag"><div class="player-dot"></div>${escHtml(p.name)}${p.id===socket.id?' <span style="color:var(--dim)">(you)</span>':''}</div>`
+    ).join('');
+  });
+
+  socket.on('gameStart', ({ map, players: plist, timer }) => {
+    gameMap = map;
+    plist.forEach(p => { players[p.id] = p; });
+    myTeam = players[socket.id]?.team;
+    // Count total dots on initial map
+    totalDots = countDots(map);
+    dotsRemaining = totalDots;
+    timeLeft = timer || 120;
+    showScreen('game-screen');
+    initCanvas();
+    updateSidebar();
+    updateHUD();
+    startClientTimer();
+  });
+
+  socket.on('gameState', ({ map, players: plist, timeLeft: tl }) => {
+    gameMap = map;
+    players = {};
+    plist.forEach(p => { players[p.id] = p; });
+    animFrame++;
+    // Count dots remaining
+    dotsRemaining = countDots(map);
+    if (tl !== undefined) timeLeft = tl;
+    renderGame();
+    updateSidebar();
+    updateHUD();
+  });
+
+  socket.on('gameOver', ({ winner, reason }) => {
+    clearInterval(gameTimer);
+    const me = players[socket.id];
+    const isMyTeam = (winner === myTeam);
+
+    let title, sub, detail = '';
+    if (winner === 'pacman') {
+      title = isMyTeam ? '🏆 VICTORY!' : '💀 DEFEATED!';
+      sub = 'PACMEN CLEARED THE MAZE';
+      detail = reason || 'ALL DOTS EATEN';
+    } else if (winner === 'ghost') {
+      title = isMyTeam ? '🏆 VICTORY!' : '💀 DEFEATED!';
+      sub = 'GHOSTS DEVOURED ALL PACMEN';
+      detail = reason || 'NO PACMEN REMAIN';
+    } else {
+      title = '💥 DRAW!';
+      sub = 'TIME RAN OUT';
+      detail = reason || '';
+    }
+
+    document.getElementById('overlay-title').textContent = title;
+    document.getElementById('overlay-title').style.color =
+      winner === 'ghost' && isMyTeam ? 'var(--ghost)' :
+      winner === 'pacman' && isMyTeam ? 'var(--pac)' :
+      winner && !isMyTeam ? 'var(--ghost)' : '#ffffff';
+    document.getElementById('overlay-sub').textContent = sub;
+    document.getElementById('overlay-detail').textContent = detail;
+    document.getElementById('overlay').classList.add('show');
+  });
+}
+
+// ─── Room actions ─────────────────────────────────────────────────────────────
+function createRoom() { const n = getName(); if (!n) return; if (!socket) initSocket(); socket.emit('createRoom', { name: n }); }
+function joinRoom() {
+  const n = getName(); if (!n) return;
+  const code = document.getElementById('code-input').value.trim().toUpperCase();
+  if (code.length < 3) { showError('menu-error', 'Enter a valid room code'); return; }
+  if (!socket) initSocket();
+  socket.emit('joinRoom', { code, name: n });
+}
+function startGame() { socket.emit('startGame'); }
+function leaveRoom() {
+  clearInterval(gameTimer);
+  if (socket) socket.disconnect();
+  socket = null; players = {}; gameMap = null;
+  showScreen('menu-screen');
+}
+function backToMenu() { document.getElementById('overlay').classList.remove('show'); leaveRoom(); }
+function sendDir(dir) {
+  if (!socket) return;
+  socket.emit('input', { dir });
+  myDir = dir;
+  highlightKey(dir);
+}
+
+// ─── Client-side countdown (display only, server is authoritative) ────────────
+function startClientTimer() {
+  clearInterval(gameTimer);
+  gameTimer = setInterval(() => {
+    timeLeft = Math.max(0, timeLeft - 1);
+    updateHUD();
+  }, 1000);
+}
+
+// ─── Canvas ───────────────────────────────────────────────────────────────────
+function initCanvas() {
+  const canvas = document.getElementById('gameCanvas');
+  const maxW = Math.min(window.innerWidth - 32, 546);
+  const cellSize = Math.floor(maxW / COLS);
+  canvas._cell = cellSize;
+  canvas.width  = COLS * cellSize;
+  canvas.height = ROWS * cellSize;
+  renderGame();
+}
+
+function renderGame() {
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  const CS = canvas._cell || 26;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (!gameMap) return;
+
+  // Background
+  ctx.fillStyle = '#08080f';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const cell = gameMap[r][c];
+      const cx = c * CS, cy = r * CS;
+
+      if (cell === CELL_WALL) {
+        // Wall
+        ctx.fillStyle = '#0f2a5a';
+        ctx.fillRect(cx, cy, CS, CS);
+        ctx.strokeStyle = '#1e4a9a';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(cx+0.5, cy+0.5, CS-1, CS-1);
+
+      } else if (cell === CELL_DOT) {
+        // Normal dot — small white circle
+        const dotR = Math.max(2, CS * 0.1);
+        ctx.fillStyle = '#ffffff99';
+        ctx.beginPath();
+        ctx.arc(cx + CS/2, cy + CS/2, dotR, 0, Math.PI*2);
+        ctx.fill();
+
+      } else if (cell === CELL_POWER) {
+        // Power pellet — larger glowing circle
+        const pR = Math.max(4, CS * 0.22);
+        const pulse = 0.7 + 0.3 * Math.sin(animFrame * 0.15);
+        ctx.shadowBlur = 10 * pulse;
+        ctx.shadowColor = 'var(--powerdot)';
+        ctx.fillStyle = `rgba(0, 212, 255, ${pulse})`;
+        ctx.beginPath();
+        ctx.arc(cx + CS/2, cy + CS/2, pR, 0, Math.PI*2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+    }
+  }
+
+  // Dead players (faded)
+  Object.values(players).forEach(p => {
+    if (p.alive) return;
+    const x = p.col*CS+CS/2, y = p.row*CS+CS/2;
+    ctx.globalAlpha = 0.18;
+    ctx.fillStyle = p.team === 'pacman' ? '#ffd700' : '#e94560';
+    ctx.beginPath(); ctx.arc(x, y, CS/2-5, 0, Math.PI*2); ctx.fill();
+    ctx.globalAlpha = 1;
+  });
+
+  // Live players
+  Object.values(players).forEach(p => {
+    if (!p.alive) return;
+    const x = p.col*CS+CS/2, y = p.row*CS+CS/2, r = CS/2-3;
+    const isMe = p.id === socket.id;
+    if (p.team === 'pacman') drawPacman(ctx, x, y, r, p, isMe, CS);
+    else drawGhost(ctx, x, y, r, p, isMe, CS);
+  });
+}
+
+function drawPacman(ctx, x, y, r, p, isMe, CS) {
+  const mouthAngle = 0.25 + 0.2 * Math.abs(Math.sin(animFrame * 0.5));
+  let startAngle = 0;
+  if (p.dir === 'up') startAngle = -Math.PI/2;
+  else if (p.dir === 'down') startAngle = Math.PI/2;
+  else if (p.dir === 'left') startAngle = Math.PI;
+  if (isMe) { ctx.shadowBlur = 18; ctx.shadowColor = '#ffd700'; }
+  ctx.fillStyle = '#ffd700';
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.arc(x, y, r, startAngle+mouthAngle, startAngle+Math.PI*2-mouthAngle);
+  ctx.closePath(); ctx.fill();
+  const eyeAngle = startAngle - Math.PI/3;
+  ctx.fillStyle = '#1a0a00';
+  ctx.beginPath();
+  ctx.arc(x+r*0.5*Math.cos(eyeAngle), y+r*0.5*Math.sin(eyeAngle), 2, 0, Math.PI*2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  drawName(ctx, x, y-r-6, p.name, isMe);
+}
+
+function drawGhost(ctx, x, y, r, p, isMe) {
+  if (isMe) { ctx.shadowBlur = 18; ctx.shadowColor = '#e94560'; }
+  ctx.fillStyle = isMe ? '#ff6680' : '#e94560';
+  ctx.beginPath();
+  ctx.arc(x, y, r, Math.PI, 0);
+  const segW = (r*2)/3;
+  for (let i = 3; i >= 0; i--) {
+    ctx.lineTo(x+r-i*segW, (i%2===0) ? y+r : y+r-5);
+  }
+  ctx.closePath(); ctx.fill();
+  [-r*0.35, r*0.35].forEach(ox => {
+    ctx.fillStyle = 'white';
+    ctx.beginPath(); ctx.ellipse(x+ox, y-2, 3.5, 4, 0, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#1a0a00';
+    const px = p.dir==='right'?1.5:p.dir==='left'?-1.5:0;
+    const py = p.dir==='down'?1.5:p.dir==='up'?-1.5:0;
+    ctx.beginPath(); ctx.arc(x+ox+px, y-2+py, 2, 0, Math.PI*2); ctx.fill();
+  });
+  ctx.shadowBlur = 0;
+  drawName(ctx, x, y-r-6, p.name, isMe);
+}
+
+function drawName(ctx, x, y, name, isMe) {
+  ctx.font = `${isMe?'bold ':''}9px Orbitron, monospace`;
+  ctx.fillStyle = isMe ? '#ffffff' : '#aaaacc';
+  ctx.textAlign = 'center';
+  ctx.fillText(name.length>8 ? name.slice(0,7)+'…' : name, x, y);
+}
+
+// ─── HUD ──────────────────────────────────────────────────────────────────────
+function updateHUD() {
+  const mins = Math.floor(timeLeft / 60);
+  const secs = String(timeLeft % 60).padStart(2, '0');
+  const timeStr = `${mins}:${secs}`;
+
+  document.getElementById('hud-dot-count').textContent = dotsRemaining;
+  document.getElementById('hud-time').textContent = timeStr;
+  document.getElementById('mob-dot-count').textContent = dotsRemaining;
+  document.getElementById('mob-time').textContent = timeStr;
+}
+
+// ─── Sidebar ──────────────────────────────────────────────────────────────────
+function updateSidebar() {
+  const pacs   = Object.values(players).filter(p => p.team==='pacman');
+  const ghosts = Object.values(players).filter(p => p.team==='ghost');
+
+  const pacHTML = pacs.map(p =>
+    `<div class="player-row ${p.alive?'':'dead'}">
+      <span class="player-emoji">${p.id===socket.id?'🌟':'🟡'}</span>
+      <span style="color:var(--pac)">${escHtml(p.name)}</span>
+    </div>`
+  ).join('') || '<div style="color:var(--dim);font-size:0.55rem">None</div>';
+
+  const ghostHTML = ghosts.map(p =>
+    `<div class="player-row ${p.alive?'':'dead'}">
+      <span class="player-emoji">${p.id===socket.id?'🌟':'👻'}</span>
+      <span style="color:var(--ghost)">${escHtml(p.name)}</span>
+    </div>`
+  ).join('') || '<div style="color:var(--dim);font-size:0.55rem">None</div>';
+
+  document.getElementById('pac-list').innerHTML   = pacHTML;
+  document.getElementById('ghost-list').innerHTML = ghostHTML;
+  document.getElementById('mob-pac-list').innerHTML   = pacHTML;
+  document.getElementById('mob-ghost-list').innerHTML = ghostHTML;
+
+  // Dot progress bar
+  if (totalDots > 0) {
+    const pct = (dotsRemaining / totalDots) * 100;
+    document.getElementById('dot-bar').style.width = pct + '%';
+    document.getElementById('dot-progress-label').textContent = `${dotsRemaining} / ${totalDots} dots remaining`;
+  }
+
+  const me = players[socket.id];
+  if (me) {
+    document.getElementById('my-team-display').innerHTML = me.team==='pacman'
+      ? '<span style="color:var(--pac);font-family:\'Press Start 2P\',monospace;font-size:0.7rem">🟡 PACMAN</span>'
+      : '<span style="color:var(--ghost);font-family:\'Press Start 2P\',monospace;font-size:0.7rem">👻 GHOST</span>';
+    const el = document.getElementById('mob-role-value');
+    el.textContent = me.team==='pacman' ? '🟡 PACMAN' : '👻 GHOST';
+    el.style.color = me.team==='pacman' ? 'var(--pac)' : 'var(--ghost)';
+  }
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function countDots(map) {
+  let count = 0;
+  for (let r = 0; r < map.length; r++)
+    for (let c = 0; c < map[r].length; c++)
+      if (map[r][c] === CELL_DOT || map[r][c] === CELL_POWER) count++;
+  return count;
+}
+
+const keyMap = {
+  ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',
+  w:'up',s:'down',a:'left',d:'right',W:'up',S:'down',A:'left',D:'right'
+};
+document.addEventListener('keydown', e => {
+  if (document.activeElement && ['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
+  if (!document.getElementById('game-screen').classList.contains('active')) return;
+  const dir = keyMap[e.key];
+  if (dir) { e.preventDefault(); sendDir(dir); }
+});
+
+function highlightKey(dir) {
+  ['up','down','left','right'].forEach(d => document.getElementById(`k-${d}`)?.classList.toggle('active', d===dir));
+  setTimeout(() => document.getElementById(`k-${dir}`)?.classList.remove('active'), 200);
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function getName() {
+  const n = document.getElementById('name-input').value.trim();
+  if (!n) { showError('menu-error', 'Enter a name first'); return null; }
+  showError('menu-error', ''); return n;
+}
+function showError(id, msg) { const el = document.getElementById(id); if (el) el.textContent = msg; }
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+document.getElementById('code-input').addEventListener('input', function() { this.value = this.value.toUpperCase(); });
+</script>
+
+
+</body>
+</html>
